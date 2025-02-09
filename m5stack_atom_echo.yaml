@@ -10,7 +10,7 @@ esphome:
 
   project:
       name: MorganMLGman.M5Stack_Atom_Echo
-      version: "1.1.1"
+      version: "1.1.2"
 
 esp32:
   board: m5stack-atom
