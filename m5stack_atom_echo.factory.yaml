@@ -9,8 +9,7 @@ esphome:
 dashboard_import:
   package_import_url: github://MorganMLGman/M5Stack_Atom_Echo/m5stack_atom_echo.yaml@main
 
+# esp32_improv:
+#   authorizer: none
 
-esp32_improv:
-  authorizer: none
-
-improv_serial:
+# improv_serial:
