@@ -1,6 +1,8 @@
 substitutions:
   name: m5stack-atom-echo
   friendly_name: M5Stack Atom Echo
+  ap_password: "123456789"
+  ota_password: "123456789"
 
 esphome:
   name: ${name}
@@ -10,7 +12,7 @@ esphome:
 
   project:
       name: MorganMLGman.M5Stack_Atom_Echo
-      version: "1.1.2"
+      version: "1.1.3"
 
 esp32:
   board: m5stack-atom
@@ -41,42 +43,41 @@ external_components:
     components: [file]
     refresh: 0s
 
-logger:
-  level: DEBUG
-
-wifi:
-  reboot_timeout: 10min
-  ap:
-
-captive_portal:
-
-api:
-  reboot_timeout: 10min
+http_request:
 
 ota:
   - platform: esphome
     id: ota_esphome
+    password: ${ota_password}
+  - platform: http_request
+    id: ota_http
+
+update:
+  - platform: http_request
+    id: update_http_request
+    name: Firmware Update
+    source: https://morganmlgman.github.io/M5Stack_Atom_Echo/firmware/m5stack_atom_echo.manifest.json
 
 globals:
   - id: led_red
     type: float
     restore_value: true
-    initial_value: '0.0'
+    initial_value: '1.0'
 
   - id: led_green
     type: float
     restore_value: true
-    initial_value: '0.0'
+    initial_value: '0.89'
 
   - id: led_blue
     type: float
     restore_value: true
-    initial_value: '0.0'
+    initial_value: '0.71'
   
   - id: led_brightness
     type: float
     restore_value: true
-    initial_value: '0.0'
+    initial_value: '0.60'
 
 light:
   - platform: esp32_rmt_led_strip
@@ -113,6 +114,7 @@ script:
           id(led_green) = led_color.get_green();
           id(led_blue) = led_color.get_blue();
           id(led_brightness) = led_color.get_brightness();
+          ESP_LOGI("get_led_color", "Red: %f, Green: %f, Blue: %f, Brightness: %f", id(led_red), id(led_green), id(led_blue), id(led_brightness));
 
   - id: reset_led
     then:
@@ -123,14 +125,10 @@ script:
           then:
             - light.turn_on:
                 id: led
-                red: !lambda |-
-                  return id(led_red);
-                green: !lambda |-
-                  return id(led_green);
-                blue: !lambda |-
-                  return id(led_blue);
-                brightness: !lambda |-
-                  return id(led_brightness);
+                red: !lambda return id(led_red);
+                green: !lambda return id(led_green);
+                blue: !lambda return id(led_blue);
+                brightness: !lambda return id(led_brightness);
                 effect: none
           else:
             - if:
@@ -147,6 +145,48 @@ script:
                       effect: none
                 else:
                   - light.turn_off: led
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    entity_category: diagnostic
+    id: echo_button
+    on_multi_click:
+      - timing:
+          - ON for at least 50ms
+          - OFF for at least 50ms
+        then:
+          - if:
+              condition:
+                switch.is_on: timer_ringing
+              then:
+                - switch.turn_off: timer_ringing
+              else:
+                - if:
+                    condition:
+                      lambda: return id(wake_word_engine_location).state == "On device";
+                    then:
+                      - voice_assistant.stop
+                      - micro_wake_word.stop:
+                      - delay: 1s
+                      - script.execute: reset_led
+                      - script.wait: reset_led
+                      - micro_wake_word.start:
+                    else:
+                      - if:
+                          condition: voice_assistant.is_running
+                          then:
+                            - voice_assistant.stop:
+                            - script.execute: reset_led
+                      - voice_assistant.start_continuous:
+      - timing:
+          - ON for at least 10s
+        then:
+          - button.press: factory_reset_button_0
 
 switch:
   - platform: template
@@ -217,13 +257,6 @@ speaker:
     i2s_dout_pin: GPIO22
     dac_type: external
     channel: mono
-    sample_rate: 16000
-    bits_per_sample: 8bit
-    i2s_mode: primary
-    use_apll: false
-    bits_per_channel: default
-    buffer_duration: 1200ms
-    timeout: 400ms
 
 esp_adf:
 
@@ -231,21 +264,17 @@ file:
   - id: timer_finished_wave_file
     file: https://github.com/MorganMLGman/M5Stack_Atom_Echo/raw/main/sounds/timer_finished.wav
   - id: wake_word_triggered_wave_file
-    file: https://github.com/MorganMLGman/M5Stack_Atom_Echo/raw/main/sounds/wake_word_triggered.wav
-
+    file: https://github.com/MorganMLGman/M5Stack_Atom_Echo/raw/main/sounds/timer_finished.wav
 
 micro_wake_word:
   on_wake_word_detected:
     - script.execute: get_led_color
-    - lambda: id(echo_speaker).play(id(wake_word_triggered_wave_file), sizeof(id(wake_word_triggered_wave_file)));
-    - delay: 1s
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
   vad:
-    # model: https://github.com/esphome/micro-wake-word-models/raw/main/models/v2/vad.json
+    model: https://github.com/esphome/micro-wake-word-models/raw/main/models/v2/vad.json
   models:
-    - model: https://github.com/esphome/micro-wake-word-models/raw/main/models/okay_nabu.json
-
+    - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json
 
 voice_assistant:
   id: va
