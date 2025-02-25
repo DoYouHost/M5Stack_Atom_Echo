@@ -15,7 +15,7 @@ jobs:
       #### Modify below here to match your project ####
       files: |
         m5stack_atom_echo.factory.yaml
-      esphome-version: 2024.2.0
+      esphome-version: 2025.2.0
       #### Modify above here to match your project ####
 
       release-summary: ${{ github.event.release.body }}
