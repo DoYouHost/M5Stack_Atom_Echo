@@ -68,6 +68,11 @@ globals:
     type: float
     restore_value: true
     initial_value: '0.60'
+  
+  - id: not_playing_wake_word
+    type: bool
+    restore_value: false
+    initial_value: "true"
 
 light:
   - platform: esp32_rmt_led_strip
@@ -321,7 +326,11 @@ media_player:
           brightness: 100%
           effect: none
     on_idle:
-      - script.execute: start_wake_word
+      - if: 
+          condition:
+            lambda: return id(not_playing_wake_word);
+          then:
+            - script.execute: start_wake_word
 
 micro_wake_word:
   microphone: echo_microphone
@@ -330,22 +339,20 @@ micro_wake_word:
   models:
     - model: github://esphome/micro-wake-word-models/models/v2/okay_nabu.json
   on_wake_word_detected:
-    # - if:
-    #     condition:
-    #       switch.is_on: use_wake_sound
-    #     then:
-    #       - media_player.stop:
-    #           announcement: true
-    #       - media_player.speaker.play_on_device_media_file:
-    #           media_file: wake_word_triggered_wave_file
-    #           announcement: true
-    #       - wait_until:
-    #           and:  
-    #             - media_player.is_idle:
-    #             - speaker.is_stopped:
-    - script.execute: get_led_color
-    - voice_assistant.start:
-        wake_word: !lambda return wake_word;
+    then:
+      - script.execute: get_led_color
+      - lambda: id(not_playing_wake_word) = false;
+      - media_player.speaker.play_on_device_media_file:
+          media_file: wake_word_triggered_wave_file
+          announcement: true
+      - delay: 20ms
+      - wait_until:
+          and:
+            - media_player.is_idle:
+            - speaker.is_stopped:
+      - lambda: id(not_playing_wake_word) = true;
+      - voice_assistant.start:
+          wake_word: !lambda return wake_word;
 
 voice_assistant:
   id: va
