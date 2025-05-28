@@ -10,7 +10,7 @@ permissions:
 jobs:
   build-firmware:
     name: Build Firmware
-    uses: DoYouHost/DIY_VoicePE/.github/workflows/build.yml@main
+    uses: DoYouHost/M5Stack_Atom_Echo/.github/workflows/build.yml@main
     with:
       #### Modify below here to match your project ####
       files: |
@@ -28,7 +28,7 @@ jobs:
     name: Upload to R2
     needs:
       - build-firmware
-    uses: DoYouHost/DIY_VoicePE/.github/workflows/upload-to-r2.yml@main
+    uses: DoYouHost/M5Stack_Atom_Echo/.github/workflows/upload-to-r2.yml@main
     with:
       directory: esphome-atom-echo
     secrets: inherit
@@ -44,7 +44,7 @@ jobs:
   promote-beta:
     name: Promote to Beta
     if: github.event_name == 'release'
-    uses: DoYouHost/DIY_VoicePE/.github/workflows/promote-r2.yml@main
+    uses: DoYouHost/M5Stack_Atom_Echo/.github/workflows/promote-r2.yml@main
     needs:
       - upload-to-r2
     with:
@@ -57,7 +57,7 @@ jobs:
   promote-prod:
     name: Promote to Production
     if: github.event_name == 'release' && github.event.release.prerelease == false
-    uses: DoYouHost/DIY_VoicePE/.github/workflows/promote-r2.yml@main
+    uses: DoYouHost/M5Stack_Atom_Echo/.github/workflows/promote-r2.yml@main
     needs:
       - upload-to-r2
     with:
