@@ -3,13 +3,10 @@ packages:
 
 esphome:
   project:
-    name: MorganMLGman.M5Stack_Atom_Echo
+    name: DoYouHost.M5Stack_Atom_Echo
     version: dev
 
 dashboard_import:
-  package_import_url: github://MorganMLGman/M5Stack_Atom_Echo/m5stack_atom_echo.yaml@main
+  package_import_url: github://DoYouHost/M5Stack_Atom_Echo/m5stack_atom_echo.yaml@main
 
-# esp32_improv:
-#   authorizer: none
-
-# improv_serial:
+improv_serial:
