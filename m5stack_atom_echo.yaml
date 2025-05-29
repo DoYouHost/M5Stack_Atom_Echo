@@ -377,6 +377,20 @@ micro_wake_word:
   on_wake_word_detected:
     then:
       - script.execute: get_led_color
+      - if:
+          condition:
+            switch.is_on: use_wake_sound
+          then:
+            - lambda: id(not_playing_wake_word) = false;
+            - media_player.speaker.play_on_device_media_file:
+                media_file: wake_word_triggered_wave_file
+                announcement: true
+            - delay: 20ms
+            - wait_until:
+                and:
+                  - media_player.is_idle:
+                  - speaker.is_stopped:
+            - lambda: id(not_playing_wake_word) = true;
       - voice_assistant.start:
           wake_word: !lambda return wake_word;
 
