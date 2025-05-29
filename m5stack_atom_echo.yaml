@@ -155,6 +155,8 @@ script:
                 blue: !lambda return id(led_blue);
                 brightness: !lambda return id(led_brightness);
                 effect: none
+          else:
+            - light.turn_off: led
 
   - id: start_wake_word
     then:
@@ -261,26 +263,26 @@ switch:
       - delay: 15min
       - switch.turn_off: timer_ringing
 
-# select:
-#   - platform: template
-#     name: "Wake word sensitivity"
-#     optimistic: true
-#     initial_option: Moderately sensitive
-#     restore_value: true
-#     entity_category: config
-#     options:
-#       - Slightly sensitive
-#       - Moderately sensitive
-#       - Very sensitive
-#     on_value:
-#       lambda: |-
-#         if (x == "Slightly sensitive") {
-#           id(okay_nabu).set_probability_cutoff(217);    // 0.85 -> 0.000 FAPH on DipCo (Manifest's default)
-#         } else if (x == "Moderately sensitive") {
-#           id(okay_nabu).set_probability_cutoff(176);    // 0.69 -> 0.376 FAPH on DipCo
-#         } else if (x == "Very sensitive") {
-#           id(okay_nabu).set_probability_cutoff(143);    // 0.56 -> 0.751 FAPH on DipCo1
-#         }
+select:
+  - platform: template
+    name: "Wake word sensitivity"
+    optimistic: true
+    initial_option: Moderately sensitive
+    restore_value: true
+    entity_category: config
+    options:
+      - Slightly sensitive
+      - Moderately sensitive
+      - Very sensitive
+    on_value:
+      lambda: |-
+        if (x == "Slightly sensitive") {
+          id(okay_nabu).set_probability_cutoff(217);    // 0.85 -> 0.000 FAPH on DipCo (Manifest's default)
+        } else if (x == "Moderately sensitive") {
+          id(okay_nabu).set_probability_cutoff(176);    // 0.69 -> 0.376 FAPH on DipCo
+        } else if (x == "Very sensitive") {
+          id(okay_nabu).set_probability_cutoff(143);    // 0.56 -> 0.751 FAPH on DipCo1
+        }
 
   # - platform: template
   #   entity_category: config
