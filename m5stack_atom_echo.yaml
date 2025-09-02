@@ -239,11 +239,11 @@ select:
           id(hey_jarvis).set_probability_cutoff(247);
           id(hey_mycroft).set_probability_cutoff(253);
         } else if (x == "Moderately sensitive") {
-          id(okay_nabu).set_probability_cutoff(176);
+          id(okay_nabu).set_probability_cutoff(196);
           id(hey_jarvis).set_probability_cutoff(235);
           id(hey_mycroft).set_probability_cutoff(242);
         } else if (x == "Very sensitive") {
-          id(okay_nabu).set_probability_cutoff(143);
+          id(okay_nabu).set_probability_cutoff(163);
           id(hey_jarvis).set_probability_cutoff(212);
           id(hey_mycroft).set_probability_cutoff(237); 
         }

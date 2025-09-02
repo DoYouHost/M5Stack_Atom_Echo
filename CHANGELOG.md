@@ -1,6 +1,8 @@
 # 2025.1
 ## .3
 - Adjust probability cutoff for "Slightly sensitive" wake word detection
+- Adjust probability cutoff for "Moderately sensitive" wake word detection
+- Adjust probability cutoff for "Very sensitive" wake word detection
 ## .2
 - Removed WiFi scan results
 - Removed device info
