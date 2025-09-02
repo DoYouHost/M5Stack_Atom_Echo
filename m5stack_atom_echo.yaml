@@ -235,7 +235,7 @@ select:
     on_value:
       lambda: |-
         if (x == "Slightly sensitive") {
-          id(okay_nabu).set_probability_cutoff(227);
+          id(okay_nabu).set_probability_cutoff(237);
           id(hey_jarvis).set_probability_cutoff(247);
           id(hey_mycroft).set_probability_cutoff(253);
         } else if (x == "Moderately sensitive") {
