@@ -1,4 +1,6 @@
 # 2025.1
+## .1
+- Fix manifest URLs
 ## .0
 - Initial release after refactoring
 - Update code to match esphome m5stack_atom_echo configuration

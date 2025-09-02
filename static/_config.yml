@@ -1,4 +1,3 @@
-# CHANGEME: Set these variable to your liking
 title: ESPHome M5Stack Atom Echo
 description: Powered by ESPHome and ESP Web Tools
-theme: jekyll-theme-cayman
+theme: jekyll-theme-minimal
