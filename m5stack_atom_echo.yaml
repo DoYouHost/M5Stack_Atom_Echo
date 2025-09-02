@@ -1,14 +1,15 @@
 substitutions:
-  name: m5stack-atom-echo
-  friendly_name: M5Stack Atom Echo
-  ap_password: "123456789"
-  ota_password: "123456789"
+  API_KEY: "Jc/C7k2Zu36OC7pPN023TNZOiuO5Op1vn3yXEckfabg="
+  OTA_PASSWORD: "9jrsAE&4wCyizexHnB6H66sfbiaXtwu@"
+  PROD_MANIFEST_URL: "https://morganmlg.com/M5StackAtomEcho/manifest.json"
+  BETA_MANIFEST_URL: "https://morganmlg.com/M5StackAtomEcho/manifest-beta.json"
 
 esphome:
-  name: ${name}
+  name: m5stack-atom-echo
+  friendly_name: M5Stack Atom Echo
+  comment: M5Stack Atom Echo with Ok Nabu wake word
   name_add_mac_suffix: true
-  friendly_name: ${friendly_name}
-  min_version: 2025.5.1
+  min_version: 2025.8.2
 
   project:
       name: DoYouHost.M5Stack_Atom_Echo
@@ -16,206 +17,131 @@ esphome:
 esp32:
   board: m5stack-atom
   cpu_frequency: 240MHz
-  flash_size: 4MB
   framework:
     type: esp-idf
-    version: recommended
-    sdkconfig_options:
-      CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240: "y"
-      # # Size optimization flags
-      # CONFIG_COMPILER_OPTIMIZATION_SIZE: "y"
-      # CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_SILENT: "y"
-      # CONFIG_COMPILER_OPTIMIZATION_CHECKS_SILENT: "y"
-      # CONFIG_LOG_DEFAULT_LEVEL_ERROR: "y"
-      # CONFIG_LOG_MAXIMUM_LEVEL_ERROR: "y"
-      # CONFIG_ESP_ERR_TO_NAME_LOOKUP: "n"
-      # CONFIG_ESP_SYSTEM_PANIC_SILENT_REBOOT: "y"
-      # # Newlib optimizations
-      # CONFIG_LIBC_NEWLIB_NANO_FORMAT: "y"
-      # # VFS optimizations (if not using filesystem features)
-      # CONFIG_VFS_SUPPORT_TERMIOS: "n"
-      # CONFIG_VFS_SUPPORT_SELECT: "n"
-      # CONFIG_VFS_SUPPORT_DIR: "n"
-      # # WiFi optimizations (if WPA3/enterprise not needed)
-      # CONFIG_ESP_WIFI_ENABLE_WPA3_SAE: "n"
-      # CONFIG_ESP_WIFI_ENTERPRISE_SUPPORT: "n"
-
-packages: 
-  esp32_package:
-    url: https://github.com/MorganMLGman/ESPHomeBaseFiles
-    files:
-      - base.yaml
-      - ESP32/diagnostic.yaml
-      - ESP32/debug.yaml
-    ref: master
-    refresh: 0s
 
 logger:
   level: DEBUG
   logs:
-    sensor: WARN
+    sensor: INFO
 
 debug:
   update_interval: 5s
 
 wifi:
   id: wifi_id
+  reboot_timeout: 30min
   enable_btm: true
   enable_rrm: true
 
 captive_portal:
 
+safe_mode:
+
+api:
+  reboot_timeout: 30min
+  batch_delay: 50ms
+  encryption:
+    key: "$API_KEY"
+
 http_request:
+  follow_redirects: true
 
 ota:
   - platform: esphome
-    id: ota_esphome
-    password: ${ota_password}
+    password: "$OTA_PASSWORD"
   - platform: http_request
-    id: ota_http
 
 update:
   - platform: http_request
     id: update_http_request
     name: Firmware Update
-    source: https://morganmlg.com/esphome-atom-echo/M5Stack_Atom_Echo/manifest.json
+    source: $PROD_MANIFEST_URL
 
-globals:
-  - id: led_red
-    type: float
-    restore_value: true
-    initial_value: '1.0'
-
-  - id: led_green
-    type: float
-    restore_value: true
-    initial_value: '0.89'
-
-  - id: led_blue
-    type: float
-    restore_value: true
-    initial_value: '0.71'
-  
-  - id: led_brightness
-    type: float
-    restore_value: true
-    initial_value: '0.60'
-  
+globals:  
   - id: not_playing_wake_word
     type: bool
     restore_value: false
     initial_value: "true"
 
-light:
-  - platform: esp32_rmt_led_strip
-    id: led
-    name: LED
-    disabled_by_default: false
-    entity_category: config
-    pin: GPIO27
-    default_transition_length: 0s
-    chipset: SK6812
-    num_leds: 1
-    rgb_order: grb
-    effects:
-      - pulse:
-          name: "Slow Pulse"
-          transition_length: 250ms
-          update_interval: 250ms
-          min_brightness: 50%
-          max_brightness: 100%
-      - pulse:
-          name: "Fast Pulse"
-          transition_length: 100ms
-          update_interval: 100ms
-          min_brightness: 50%
-          max_brightness: 100%
+button:
+  - platform: factory_reset
+    id: factory_reset_btn
+    name: Factory reset
+  - platform: restart
+    id: restart_btn
+    name: Restart
+  - platform: safe_mode
+    id: safe_mode_btn
+    name: Safe mode
+  - platform: shutdown
+    id: shutdown_btn
+    name: Shutdown
 
-script:
-  - id: get_led_color
-    then:
-      - lambda: |-
-          auto led_color = id(led).current_values;
-          id(led_red) = led_color.get_red();
-          id(led_green) = led_color.get_green();
-          id(led_blue) = led_color.get_blue();
-          id(led_brightness) = led_color.get_brightness();
-          // ESP_LOGI("get_led_color", "Red: %f, Green: %f, Blue: %f, Brightness: %f", id(led_red), id(led_green), id(led_blue), id(led_brightness));
+sensor:
+  - platform: uptime
+    type: seconds
+    name: Uptime
+    update_interval: 60s
 
-  - id: reset_led
-    then:
-      - if:
-          condition:
-            - switch.is_on: use_listen_light
-          then:
-            - light.turn_on:
-                id: led
-                red: !lambda return id(led_red);
-                green: !lambda return id(led_green);
-                blue: !lambda return id(led_blue);
-                brightness: !lambda return id(led_brightness);
-                effect: none
-          else:
-            - light.turn_off: led
+  - platform: wifi_signal
+    name: "WiFi Signal dB"
+    id: wifi_signal_db
+    update_interval: 60s
+    entity_category: "diagnostic"
 
-  - id: start_wake_word
-    then:
-      - if:
-          condition:
-            not:
-              - voice_assistant.is_running:
-          then:
-            - lambda: id(va).set_use_wake_word(false);
-            - micro_wake_word.start:
+  - platform: copy
+    source_id: wifi_signal_db
+    name: "WiFi Signal Percent"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+    unit_of_measurement: "Signal %"
+    entity_category: "diagnostic"
+    device_class: ""
 
-  - id: stop_wake_word
-    then:
-      - micro_wake_word.stop:
+  - platform: internal_temperature
+    name: "Internal Temperature"
 
-binary_sensor:
-  - platform: gpio
-    pin:
-      number: GPIO39
-      inverted: true
-    name: Button
-    disabled_by_default: true
-    entity_category: diagnostic
-    id: echo_button
-    on_multi_click:
-      - timing:
-          - ON for at least 50ms
-          - OFF for at least 50ms
-        then:
-          - if:
-              condition:
-                switch.is_on: timer_ringing
-              then:
-                - switch.turn_off: timer_ringing
-              else:
-                - script.execute: start_wake_word
-      - timing:
-          - ON for at least 10s
-        then:
-          - button.press: factory_reset_button_0
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    psram:
+      name: "Free PSRAM"
+    cpu_frequency:
+      name: "CPU Frequency"
+      unit_of_measurement: "MHz"
+      filters:
+        - multiply: 0.000001
+
+text_sensor:
+  - platform: version
+    name: "ESPHome Version"
+
+  - platform: wifi_info
+    ip_address:
+      name: IP Address
+    ssid:
+      name: WiFi SSID
+    bssid:
+      name: WiFi BSSID
+    mac_address:
+      name: WiFi Mac Address
+    scan_results:
+      name: WiFi Latest Scan Results
+    dns_address:
+      name: WiFi DNS Address
+
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
 
 switch:
-  - platform: template
-    id: beta_firmware
-    name: Beta firmware
-    icon: "mdi:test-tube"
-    disabled_by_default: true
-    entity_category: config
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_OFF
-    on_turn_on:
-      - logger.log: "OTA updates set to use Beta firmware"
-      - lambda: id(update_http_request).set_source_url("https://morganmlg.com/esphome-atom-echo/M5Stack_Atom_Echo/manifest-beta.json");
-      - component.update: update_http_request
-    on_turn_off:
-      - logger.log: "OTA updates set to use Production firmware"
-      - lambda: id(update_http_request).set_source_url("https://morganmlg.com/esphome-atom-echo/M5Stack_Atom_Echo/manifest.json");
-      - component.update: update_http_request
-
   - platform: template
     name: Use listen light
     id: use_listen_light
@@ -237,7 +163,6 @@ switch:
     optimistic: true
     restore_mode: ALWAYS_OFF
     on_turn_off:
-      # Turn off the repeat mode and disable the pause between playlist items
       - lambda: |-
               id(echo_media_player)
                 ->make_call()
@@ -245,11 +170,9 @@ switch:
                 .set_announcement(true)
                 .perform();
               id(echo_media_player)->set_playlist_delay_ms(speaker::AudioPipelineType::ANNOUNCEMENT, 0);
-      # Stop playing the alarm
       - media_player.stop:
           announcement: true
     on_turn_on:
-      # Turn on the repeat mode and pause for 1000 ms between playlist items/repeats
       - lambda: |-
             id(echo_media_player)
               ->make_call()
@@ -265,6 +188,34 @@ switch:
 
 select:
   - platform: template
+    entity_category: config
+    name: Wake word engine location
+    id: wake_word_engine_location
+    optimistic: true
+    restore_value: true
+    options:
+      - In Home Assistant
+      - On device
+    initial_option: On device
+    on_value:
+      - if:
+          condition:
+            lambda: return x == "In Home Assistant";
+          then:
+            - micro_wake_word.stop:
+            - delay: 500ms
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
+      - if:
+          condition:
+            lambda: return x == "On device";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop:
+            - delay: 500ms
+            - micro_wake_word.start:
+  
+  - platform: template
     name: "Wake word sensitivity"
     optimistic: true
     initial_option: Moderately sensitive
@@ -277,40 +228,18 @@ select:
     on_value:
       lambda: |-
         if (x == "Slightly sensitive") {
-          id(okay_nabu).set_probability_cutoff(254);  // Modified for fewer activations
-        } else if (x == "Moderately sensitive") {
           id(okay_nabu).set_probability_cutoff(217);
-        } else if (x == "Very sensitive") {
+          id(hey_jarvis).set_probability_cutoff(247);
+          id(hey_mycroft).set_probability_cutoff(253);
+        } else if (x == "Moderately sensitive") {
           id(okay_nabu).set_probability_cutoff(176);
+          id(hey_jarvis).set_probability_cutoff(235);
+          id(hey_mycroft).set_probability_cutoff(242);
+        } else if (x == "Very sensitive") {
+          id(okay_nabu).set_probability_cutoff(143);
+          id(hey_jarvis).set_probability_cutoff(212);
+          id(hey_mycroft).set_probability_cutoff(237); 
         }
-
-  # - platform: template
-  #   entity_category: config
-  #   name: Wake word engine location
-  #   id: wake_word_engine_location
-  #   optimistic: true
-  #   restore_value: true
-  #   options:
-  #     - In Home Assistant
-  #     - On device
-  #   initial_option: On device
-  #   on_value:
-  #     - if:
-  #         condition:
-  #           lambda: return x == "In Home Assistant";
-  #         then:
-  #           - micro_wake_word.stop:
-  #           - delay: 500ms
-  #           - lambda: id(va).set_use_wake_word(true);
-  #           - voice_assistant.start_continuous:
-  #     - if:
-  #         condition:
-  #           lambda: return x == "On device";
-  #         then:
-  #           - lambda: id(va).set_use_wake_word(false);
-  #           - voice_assistant.stop:
-  #           - delay: 500ms
-  #           - micro_wake_word.start:
 
 i2s_audio:
   - id: i2s_audio_bus
@@ -345,6 +274,7 @@ media_player:
       format: WAV
     codec_support_enabled: false
     buffer_size: 6000
+    volume_min: 0.4
     files:
       - id: timer_finished_wave_file
         file: https://github.com/DoYouHost/M5Stack_Atom_Echo/raw/main/sounds/timer_finished.wav
@@ -356,7 +286,6 @@ media_player:
             - microphone.is_capturing:
           then:
             - script.execute: stop_wake_word
-            - script.execute: reset_led
       - light.turn_on:
           id: led
           blue: 100%
@@ -367,32 +296,6 @@ media_player:
     on_idle:
       - script.execute: start_wake_word
       - script.execute: reset_led
-
-micro_wake_word:
-  microphone: echo_microphone
-  vad:
-  models:
-    - model: okay_nabu
-      id: okay_nabu
-  on_wake_word_detected:
-    then:
-      - script.execute: get_led_color
-      - if:
-          condition:
-            switch.is_on: use_wake_sound
-          then:
-            - lambda: id(not_playing_wake_word) = false;
-            - media_player.speaker.play_on_device_media_file:
-                media_file: wake_word_triggered_wave_file
-                announcement: true
-            - delay: 20ms
-            - wait_until:
-                and:
-                  - media_player.is_idle:
-                  - speaker.is_stopped:
-            - lambda: id(not_playing_wake_word) = true;
-      - voice_assistant.start:
-          wake_word: !lambda return wake_word;
 
 voice_assistant:
   id: va
@@ -431,14 +334,18 @@ voice_assistant:
         condition:
           - media_player.is_announcing:
         timeout: 0.5s
-    - wait_until:
-        - and:
-            - not:
-                voice_assistant.is_running:
-            - not:
-                speaker.is_playing:
-    - lambda: id(va).set_use_wake_word(false);
-    - micro_wake_word.start:
+    - if:
+        condition:
+          - lambda: return id(wake_word_engine_location).state == "On device";
+        then:
+          - wait_until:
+              - and:
+                  - not:
+                      voice_assistant.is_running:
+                  - not:
+                      speaker.is_playing:
+          - lambda: id(va).set_use_wake_word(false);
+          - micro_wake_word.start:
     - script.execute: reset_led
   on_error:
     - light.turn_on:
@@ -472,3 +379,145 @@ voice_assistant:
         - switch.is_off: timer_ringing
     - light.turn_off: led
     - switch.turn_off: timer_ringing
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO39
+      inverted: true
+    name: Button
+    disabled_by_default: true
+    entity_category: diagnostic
+    id: echo_button
+    on_multi_click:
+      - timing:
+          - ON for at least 50ms
+          - OFF for at least 50ms
+        then:
+          - if:
+              condition:
+                switch.is_on: timer_ringing
+              then:
+                - switch.turn_off: timer_ringing
+              else:
+                - script.execute: start_wake_word
+      - timing:
+          - ON for at least 10s
+        then:
+          - button.press: factory_reset_btn
+
+light:
+  - platform: esp32_rmt_led_strip
+    id: led
+    name: None
+    disabled_by_default: true
+    entity_category: config
+    pin: GPIO27
+    default_transition_length: 0s
+    chipset: SK6812
+    num_leds: 1
+    rgb_order: grb
+    effects:
+      - pulse:
+          name: "Slow Pulse"
+          transition_length: 250ms
+          update_interval: 250ms
+          min_brightness: 50%
+          max_brightness: 100%
+      - pulse:
+          name: "Fast Pulse"
+          transition_length: 100ms
+          update_interval: 100ms
+          min_brightness: 50%
+          max_brightness: 100%
+
+script:
+  - id: reset_led
+    then:
+      - if:
+          condition:
+            - lambda: return id(wake_word_engine_location).state == "On device";
+            - switch.is_on: use_listen_light
+          then:
+            - light.turn_on:
+                id: led
+                red: 100%
+                green: 89%
+                blue: 71%
+                brightness: 60%
+                effect: none
+          else:
+            - if:
+                condition:
+                  - lambda: return id(wake_word_engine_location).state != "On device";
+                  - switch.is_on: use_listen_light
+                then:
+                  - light.turn_on:
+                      id: led
+                      red: 0%
+                      green: 100%
+                      blue: 100%
+                      brightness: 60%
+                      effect: none
+                else:
+                  - light.turn_off: led
+  - id: start_wake_word
+    then:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - micro_wake_word.start:
+      - if:
+          condition:
+            and:
+              - not:
+                  - voice_assistant.is_running:
+              - lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(true);
+            - voice_assistant.start_continuous:
+  - id: stop_wake_word
+    then:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "In Home Assistant";
+          then:
+            - lambda: id(va).set_use_wake_word(false);
+            - voice_assistant.stop:
+      - if:
+          condition:
+            lambda: return id(wake_word_engine_location).state == "On device";
+          then:
+            - micro_wake_word.stop:
+
+micro_wake_word:
+  on_wake_word_detected:
+    - if:
+          condition:
+            switch.is_on: use_wake_sound
+          then:
+            - lambda: id(not_playing_wake_word) = false;
+            - media_player.speaker.play_on_device_media_file:
+                media_file: wake_word_triggered_wave_file
+                announcement: true
+            - delay: 20ms
+            - wait_until:
+                and:
+                  - media_player.is_idle:
+                  - speaker.is_stopped:
+            - lambda: id(not_playing_wake_word) = true;
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+  vad:
+  models:
+    - model: okay_nabu
+      id: okay_nabu
+    - model: hey_mycroft
+      id: hey_mycroft
+    - model: hey_jarvis
+      id: hey_jarvis
