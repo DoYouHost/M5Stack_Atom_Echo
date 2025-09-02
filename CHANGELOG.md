@@ -1,4 +1,6 @@
 # 2025.1
+## .4
+- Add "Check for Updates" button
 ## .3
 - Adjust probability cutoff for "Slightly sensitive" wake word detection
 - Adjust probability cutoff for "Moderately sensitive" wake word detection
