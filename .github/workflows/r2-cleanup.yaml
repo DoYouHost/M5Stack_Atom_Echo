@@ -7,9 +7,9 @@ on:
 
 jobs:
   cleanup:
-    uses: DoYouHost/workflows/.github/workflows/cleanup-r2.yml@main
+    uses: DoYouHost/workflows/.github/workflows/cleanup-r2.yml@v1.0.0
     with:
-      directory: 'serverCoolingFanController'
+      directory: 'M5StackAtomEcho'
       days_old: '30'
     secrets:
       CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}

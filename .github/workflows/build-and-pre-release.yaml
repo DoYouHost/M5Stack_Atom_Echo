@@ -190,7 +190,7 @@ jobs:
     name: Build Firmware
     needs: [check-trigger, generate-version]
     if: needs.check-trigger.outputs.should-build == 'true'
-    uses: DoYouHost/workflows/.github/workflows/build.yml@main
+    uses: DoYouHost/workflows/.github/workflows/build.yml@v1.0.0
     with:
       files: |
         m5stack_atom_echo.factory.yaml
@@ -203,7 +203,7 @@ jobs:
 
   upload-to-pre-release:
     name: Upload to Pre-Release
-    uses: DoYouHost/workflows/.github/workflows/upload-to-gh-release.yml@main
+    uses: DoYouHost/workflows/.github/workflows/upload-to-gh-release.yml@v1.0.0
     needs:
       - build-firmware
       - generate-version
@@ -216,7 +216,7 @@ jobs:
 
   upload-to-r2:
     name: Upload to R2
-    uses: DoYouHost/workflows/.github/workflows/upload-to-r2.yml@main
+    uses: DoYouHost/workflows/.github/workflows/upload-to-r2.yml@v1.0.0
     needs:
       - build-firmware
       - generate-version
@@ -226,7 +226,7 @@ jobs:
 
   promote-to-beta:
     name: Promote to Beta
-    uses: DoYouHost/workflows/.github/workflows/promote-r2.yml@main
+    uses: DoYouHost/workflows/.github/workflows/promote-r2.yml@v1.0.0
     needs:
       - build-firmware
       - generate-version
