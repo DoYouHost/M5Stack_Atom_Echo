@@ -58,12 +58,6 @@ update:
     name: Firmware Update
     source: $PROD_MANIFEST_URL
 
-globals:  
-  - id: not_playing_wake_word
-    type: bool
-    restore_value: false
-    initial_value: "true"
-
 button:
   - platform: factory_reset
     id: factory_reset_btn
@@ -130,14 +124,10 @@ text_sensor:
       name: WiFi BSSID
     mac_address:
       name: WiFi Mac Address
-    scan_results:
-      name: WiFi Latest Scan Results
     dns_address:
       name: WiFi DNS Address
 
   - platform: debug
-    device:
-      name: "Device Info"
     reset_reason:
       name: "Reset Reason"
 
@@ -145,6 +135,7 @@ switch:
   - platform: template
     name: Use listen light
     id: use_listen_light
+    icon: "mdi:lightbulb"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
     entity_category: config
@@ -153,11 +144,12 @@ switch:
     on_turn_off:
       - script.execute: reset_led
   - platform: template
-    name: Use wake sound
     id: use_wake_sound
-    optimistic: true
-    restore_mode: RESTORE_DEFAULT_ON
+    name: Use wake sound
+    icon: "mdi:bullhorn"
     entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
   - platform: template
     id: timer_ringing
     optimistic: true
@@ -185,6 +177,21 @@ switch:
           announcement: true
       - delay: 15min
       - switch.turn_off: timer_ringing
+
+  - platform: template
+    name: Beta Firmware
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    icon: "mdi:test-tube"
+    entity_category: config
+    on_turn_on:
+      - logger.log: "OTA updates set to use Beta firmware"
+      - lambda: id(update_http_request).set_source_url("$BETA_MANIFEST_URL");
+      - component.update: update_http_request
+    on_turn_off:
+      - logger.log: "OTA updates set to use Production firmware"
+      - lambda: id(update_http_request).set_source_url("$PROD_MANIFEST_URL");
+      - component.update: update_http_request
 
 select:
   - platform: template
@@ -228,7 +235,7 @@ select:
     on_value:
       lambda: |-
         if (x == "Slightly sensitive") {
-          id(okay_nabu).set_probability_cutoff(217);
+          id(okay_nabu).set_probability_cutoff(227);
           id(hey_jarvis).set_probability_cutoff(247);
           id(hey_mycroft).set_probability_cutoff(253);
         } else if (x == "Moderately sensitive") {
@@ -279,7 +286,7 @@ media_player:
       - id: timer_finished_wave_file
         file: https://github.com/DoYouHost/M5Stack_Atom_Echo/raw/main/sounds/timer_finished.wav
       - id: wake_word_triggered_wave_file
-        file: https://github.com/DoYouHost/M5Stack_Atom_Echo/raw/main/sounds/wake_word_triggered1.wav
+        file: https://github.com/DoYouHost/M5Stack_Atom_Echo/raw/main/sounds/wake_word_triggered.wav
     on_announcement:
       - if:
           condition:
@@ -494,23 +501,35 @@ script:
             lambda: return id(wake_word_engine_location).state == "On device";
           then:
             - micro_wake_word.stop:
+  - id: play_sound
+    parameters:
+      priority: bool
+      sound_file: "audio::AudioFile*"
+    then:
+      - lambda: |-
+          if (priority) {
+            id(echo_media_player)
+              ->make_call()
+              .set_command(media_player::MediaPlayerCommand::MEDIA_PLAYER_COMMAND_STOP)
+              .set_announcement(true)
+              .perform();
+          }
+          if ( (id(echo_media_player).state != media_player::MediaPlayerState::MEDIA_PLAYER_STATE_ANNOUNCING ) || priority) {
+            id(echo_media_player)
+              ->play_file(sound_file, true, false);
+          }
 
 micro_wake_word:
   on_wake_word_detected:
     - if:
-          condition:
-            switch.is_on: use_wake_sound
-          then:
-            - lambda: id(not_playing_wake_word) = false;
-            - media_player.speaker.play_on_device_media_file:
-                media_file: wake_word_triggered_wave_file
-                announcement: true
-            - delay: 20ms
-            - wait_until:
-                and:
-                  - media_player.is_idle:
-                  - speaker.is_stopped:
-            - lambda: id(not_playing_wake_word) = true;
+        condition:
+          switch.is_on: use_wake_sound
+        then:
+          - script.execute:
+              id: play_sound
+              priority: true
+              sound_file: !lambda return id(wake_word_triggered_wave_file);
+          - delay: 300ms
     - voice_assistant.start:
         wake_word: !lambda return wake_word;
   vad:

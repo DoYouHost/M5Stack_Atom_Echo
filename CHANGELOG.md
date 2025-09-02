@@ -1,4 +1,9 @@
 # 2025.1
+## .2
+- Removed WiFi scan results
+- Removed device info
+- Wake sound is working
+- Changed probability cutoffs to be less aggressive
 ## .1
 - Fix manifest URLs
 ## .0
